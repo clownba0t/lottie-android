@@ -23,6 +23,7 @@ import java.util.zip.ZipInputStream;
 public class NetworkFetcher {
 
   private final Context appContext;
+  private final String cacheKey;
   private final String url;
 
   @Nullable private final NetworkCache networkCache;
@@ -34,6 +35,7 @@ public class NetworkFetcher {
   private NetworkFetcher(Context context, String url, @Nullable String cacheKey) {
     appContext = context.getApplicationContext();
     this.url = url;
+    this.cacheKey = cacheKey;
     if (cacheKey == null) {
       networkCache = null;
     } else {
@@ -61,7 +63,7 @@ public class NetworkFetcher {
     if (networkCache == null) {
       return null;
     }
-    Pair<FileExtension, InputStream> cacheResult = networkCache.fetch(url);
+    Pair<FileExtension, InputStream> cacheResult = networkCache.fetch(cacheKey);
     if (cacheResult == null) {
       return null;
     }
@@ -70,9 +72,9 @@ public class NetworkFetcher {
     InputStream inputStream = cacheResult.second;
     LottieResult<LottieComposition> result;
     if (extension == FileExtension.ZIP) {
-      result = LottieCompositionFactory.fromZipStreamSync(new ZipInputStream(inputStream), url);
+      result = LottieCompositionFactory.fromZipStreamSync(new ZipInputStream(inputStream), cacheKey);
     } else {
-      result = LottieCompositionFactory.fromJsonInputStreamSync(inputStream, url);
+      result = LottieCompositionFactory.fromJsonInputStreamSync(inputStream, cacheKey);
     }
     if (result.getValue() != null) {
       return result.getValue();
@@ -155,7 +157,7 @@ public class NetworkFetcher {
         result = LottieCompositionFactory.fromZipStreamSync(new ZipInputStream(connection.getInputStream()), null);
       } else {
         file = networkCache.writeTempCacheFile(url, connection.getInputStream(), extension);
-        result = LottieCompositionFactory.fromZipStreamSync(new ZipInputStream(new FileInputStream(file)), url);
+        result = LottieCompositionFactory.fromZipStreamSync(new ZipInputStream(new FileInputStream(file)), cacheKey);
       }
     } else {
       Logger.debug("Received json response.");
@@ -164,7 +166,7 @@ public class NetworkFetcher {
         result = LottieCompositionFactory.fromJsonInputStreamSync(connection.getInputStream(), null);
       } else {
         file = networkCache.writeTempCacheFile(url, connection.getInputStream(), extension);
-        result = LottieCompositionFactory.fromJsonInputStreamSync(new FileInputStream(new File(file.getAbsolutePath())), url);
+        result = LottieCompositionFactory.fromJsonInputStreamSync(new FileInputStream(new File(file.getAbsolutePath())), cacheKey);
       }
     }
 
